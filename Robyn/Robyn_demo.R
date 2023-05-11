@@ -1,3 +1,6 @@
+# This demo is based on the Robyn's tutorial.
+# https://github.com/facebookexperimental/Robyn
+
 # Copyright (c) Meta Platforms, Inc. and its affiliates.
 
 # This source code is licensed under the MIT license found in the
@@ -41,34 +44,6 @@ py_config()
 # install.packages("reticulate") # Install reticulate first if you haven't already
 # library("reticulate") # Load the library
 
-## Option 1: nevergrad installation via PIP (no additional installs)
-# virtualenv_create("r-reticulate")
-# use_virtualenv("r-reticulate", required = TRUE)
-# py_install("nevergrad", pip = TRUE)
-# py_config() # Check your python version and configurations
-## In case nevergrad still can't be installed,
-# Sys.setenv(RETICULATE_PYTHON = "~/.virtualenvs/r-reticulate/bin/python")
-# Reset your R session and re-install Nevergrad with option 1
-
-## Option 2: nevergrad installation via conda (must have conda installed)
-# conda_create("r-reticulate", "Python 3.9") # Only works with <= Python 3.9 sofar
-# use_condaenv("r-reticulate")
-# conda_install("r-reticulate", "nevergrad", pip=TRUE)
-# py_config() # Check your python version and configurations
-## In case nevergrad still can't be installed,
-## please locate your python file and run this line with your path:
-# use_python("~/Library/r-miniconda/envs/r-reticulate/bin/python3.9")
-# Alternatively, force Python path for reticulate with this:
-# Sys.setenv(RETICULATE_PYTHON = "~/Library/r-miniconda/envs/r-reticulate/bin/python3.9")
-# Finally, reset your R session and re-install Nevergrad with option 2
-
-#### Known potential issues when installing nevergrad and possible fixes
-# Fix SSL issue (#189): reticulate:::rm_all_reticulate_state()
-# Try updating pip: system("pip3 install --upgrade pip")
-# Be sure to have numpy (and wheel, and pip?) installed: py_install("numpy", pip = TRUE)
-# Check if something looks weird on: py_config() # Py version < 3.10? No numpy?
-# Check this issue for more ideas to debug your reticulate/nevergrad issues:
-# https://github.com/facebookexperimental/Robyn/issues/189
 
 ################################################################
 #### Step 1: Load data
@@ -86,19 +61,12 @@ head(dt_prophet_holidays)
 # Directory where you want to export results to (will create new folders)
 robyn_object <- "~/Desktop"
 
-### DEPRECATED: It must have extension .RDS. The object name can be different than Robyn:
-# robyn_object <- "~/Desktop/MyRobyn.RDS"
 
 ################################################################
 #### Step 2a: For first time user: Model specification in 4 steps
 
 #### 2a-1: First, specify input variables
 
-## -------------------------------- NOTE v3.6.0 CHANGE !!! ---------------------------------- ##
-## All sign control are now automatically provided: "positive" for media & organic variables
-## and "default" for all others. User can still customise signs if necessary. Documentation
-## is available in ?robyn_inputs
-## ------------------------------------------------------------------------------------------ ##
 InputCollect <- robyn_inputs(
   dt_input = dt_simulated_weekly,
   dt_holidays = dt_prophet_holidays,
@@ -241,80 +209,6 @@ hyperparameters <- list(
 InputCollect <- robyn_inputs(InputCollect = InputCollect, hyperparameters = hyperparameters)
 print(InputCollect)
 
-#### 2a-4: Fourth (optional), model calibration / add experimental input
-
-## Guide for calibration
-
-# 1. Calibration channels need to be paid_media_spends or organic_vars names.
-# 2. We strongly recommend to use Weibull PDF adstock for more degree of freedom when
-# calibrating Robyn.
-# 3. We strongly recommend to use experimental and causal results that are considered
-# ground truth to calibrate MMM. Usual experiment types are identity-based (e.g. Facebook
-# conversion lift) or geo-based (e.g. Facebook GeoLift). Due to the nature of treatment
-# and control groups in an experiment, the result is considered immediate effect. It's
-# rather impossible to hold off historical carryover effect in an experiment. Therefore,
-# only calibrates the immediate and the future carryover effect. When calibrating with
-# causal experiments, use calibration_scope = "immediate".
-# 4. It's controversial to use attribution/MTA contribution to calibrate MMM. Attribution
-# is considered biased towards lower-funnel channels and strongly impacted by signal
-# quality. When calibrating with MTA, use calibration_scope = "immediate".
-# 5. Every MMM is different. It's highly contextual if two MMMs are comparable or not.
-# In case of using other MMM result to calibrate Robyn, use calibration_scope = "total".
-# 6. Currently, Robyn only accepts point-estimate as calibration input. For example, if
-# 10k$ spend is tested against a hold-out for channel A, then input the incremental
-# return as point-estimate as the example below.
-# 7. The point-estimate has to always match the spend in the variable. For example, if
-# channel A usually has $100K weekly spend and the experimental holdout is 70%, input
-# the point-estimate for the $30K, not the $70K.
-# 8. If an experiment contains more than one media variable, input "channe_A+channel_B"
-# to indicate combination of channels, case sensitive.
-
-# calibration_input <- data.frame(
-#   # channel name must in paid_media_vars
-#   channel = c("facebook_S",  "tv_S", "facebook_S+search_S", "newsletter"),
-#   # liftStartDate must be within input data range
-#   liftStartDate = as.Date(c("2018-05-01", "2018-04-03", "2018-07-01", "2017-12-01")),
-#   # liftEndDate must be within input data range
-#   liftEndDate = as.Date(c("2018-06-10", "2018-06-03", "2018-07-20", "2017-12-31")),
-#   # Provided value must be tested on same campaign level in model and same metric as dep_var_type
-#   liftAbs = c(400000, 300000, 700000, 200),
-#   # Spend within experiment: should match within a 10% error your spend on date range for each channel from dt_input
-#   spend = c(421000, 7100, 350000, 0),
-#   # Confidence: if frequentist experiment, you may use 1 - pvalue
-#   confidence = c(0.85, 0.8, 0.99, 0.95),
-#   # KPI measured: must match your dep_var
-#   metric = c("revenue", "revenue", "revenue", "revenue"),
-#   # Either "immediate" or "total". For experimental inputs like Facebook Lift, "immediate" is recommended.
-#   calibration_scope = c("immediate", "immediate", "immediate", "immediate")
-# )
-# InputCollect <- robyn_inputs(InputCollect = InputCollect, calibration_input = calibration_input)
-
-
-################################################################
-#### Step 2b: For known model specification, setup in one single step
-
-## Specify hyperparameters as in 2a-2 and optionally calibration as in 2a-4 and provide them directly in robyn_inputs()
-
-# InputCollect <- robyn_inputs(
-#   dt_input = dt_simulated_weekly
-#   ,dt_holidays = dt_prophet_holidays
-#   ,date_var = "DATE"
-#   ,dep_var = "revenue"
-#   ,dep_var_type = "revenue"
-#   ,prophet_vars = c("trend", "season", "holiday")
-#   ,prophet_country = "DE"
-#   ,context_vars = c("competitor_sales_B", "events")
-#   ,paid_media_spends = c("tv_S", "ooh_S",	"print_S", "facebook_S", "search_S")
-#   ,paid_media_vars = c("tv_S", "ooh_S", 	"print_S", "facebook_I", "search_clicks_P")
-#   ,organic_vars = c("newsletter")
-#   ,factor_vars = c("events")
-#   ,window_start = "2016-11-23"
-#   ,window_end = "2018-08-22"
-#   ,adstock = "geometric"
-#   ,hyperparameters = hyperparameters # as in 2a-2 above
-#   ,calibration_input = calibration_input # as in 2a-4 above
-# )
-
 #### Check spend exposure fit if available
 if (length(InputCollect$exposure_vars) > 0) {
   lapply(InputCollect$modNLS$plots, plot)
@@ -382,16 +276,6 @@ select_model <- "1_269_3" # Pick one of the models from OutputCollect to proceed
 #### Since 3.7.1: JSON export and import (faster and lighter than RDS files)
 ExportedModel <- robyn_write(InputCollect, OutputCollect, select_model)
 print(ExportedModel)
-
-###### DEPRECATED (<3.7.1) (might work)
-# ExportedModelOld <- robyn_save(
-#   robyn_object = robyn_object, # model object location and name
-#   select_model = select_model, # selected model ID
-#   InputCollect = InputCollect,
-#   OutputCollect = OutputCollect
-# )
-# print(ExportedModelOld)
-# # plot(ExportedModelOld)
 
 ################################################################
 #### Step 5: Get budget allocation based on the selected model above
@@ -507,23 +391,6 @@ InputCollectX <- RobynRefresh$listRefresh1$InputCollect
 OutputCollectX <- RobynRefresh$listRefresh1$OutputCollect
 select_modelX <- RobynRefresh$listRefresh1$OutputCollect$selectID
 
-###### DEPRECATED (<3.7.1) (might work)
-# # Run ?robyn_refresh to check parameter definition
-# Robyn <- robyn_refresh(
-#   robyn_object = robyn_object,
-#   dt_input = dt_simulated_weekly,
-#   dt_holidays = dt_prophet_holidays,
-#   refresh_steps = 4,
-#   refresh_mode = "manual",
-#   refresh_iters = 1000, # 1k is estimation. Use refresh_mode = "manual" to try out.
-#   refresh_trials = 1
-# )
-
-## Besides plots: there are 4 CSV outputs saved in the folder for further usage
-# report_hyperparameters.csv, hyperparameters of all selected model for reporting
-# report_aggregated.csv, aggregated decomposition per independent variable
-# report_media_transform_matrix.csv, all media transformation vectors
-# report_alldecomp_matrix.csv,all decomposition vectors of independent variables
 
 ################################################################
 #### Step 7: Get budget allocation recommendation based on selected refresh runs
