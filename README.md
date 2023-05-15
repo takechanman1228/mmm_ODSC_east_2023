@@ -5,6 +5,7 @@ This repository contains materials related to Hajime Takeda's presentation on me
 - [Robyn(R) Demo Code](https://github.com/takechanman1228/mmm_ODSC_east_2023/blob/main/Robyn/Robyn_demo.R)
 
 ## Supplementary Contents
+- [Presentation Slide](https://docs.google.com/presentation/d/1JdT5ianuBCdFZhLduJGfeS5aOouRLHQshKCoPafc1_8/edit#slide=id.g242d733ff78_0_0)
 - [ODSC blog](https://opendatascience.com/unlock-the-power-of-media-mix-modeling-for-effective-advertising/)
 
 ## Related Links
